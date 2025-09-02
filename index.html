@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>32-bit NASM Hex Calculator - Assembly Programming Presentation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- Slide 1: Title -->
+        <div class="slide active" data-slide="1">
+            <div class="slide-content">
+                <h1 class="slide-title">32-bit NASM Hex Calculator Program</h1>
+                <div class="slide-subtitle">Assembly Language Programming</div>
+                <div class="title-details">
+                    <div class="feature-list">
+                        <div class="feature">✓ Linux System Calls</div>
+                        <div class="feature">✓ Hexadecimal Arithmetic</div>
+                        <div class="feature">✓ Menu-Driven Interface</div>
+                        <div class="feature">✓ 32-bit Integer Operations</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Introduction & Overview -->
+        <div class="slide" data-slide="2">
+            <div class="slide-content">
+                <h2 class="slide-title">Introduction & Overview</h2>
+                <div class="content">
+                    <h3>What does this program do?</h3>
+                    <ul>
+                        <li>Interactive hexadecimal calculator written in 32-bit NASM assembly</li>
+                        <li>Performs four basic arithmetic operations on hex numbers</li>
+                        <li>Uses Linux system calls for input/output operations</li>
+                        <li>Handles up to 8-digit hexadecimal inputs (32-bit integers)</li>
+                    </ul>
+                    
+                    <h3>Key Features</h3>
+                    <div class="feature-grid">
+                        <div class="feature-card">Menu-driven interface</div>
+                        <div class="feature-card">Hexadecimal input/output</div>
+                        <div class="feature-card">Four basic operations</div>
+                        <div class="feature-card">32-bit arithmetic</div>
+                        <div class="feature-card">System call macros</div>
+                        <div class="feature-card">Modular design</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Program Architecture -->
+        <div class="slide" data-slide="3">
+            <div class="slide-content">
+                <h2 class="slide-title">Program Architecture</h2>
+                <div class="content">
+                    <div class="architecture-diagram">
+                        <div class="arch-section">
+                            <h3>Macros</h3>
+                            <div class="arch-item">WRITE, READ, EXIT</div>
+                        </div>
+                        <div class="arch-section">
+                            <h3>.data Section</h3>
+                            <div class="arch-item">Strings & Messages</div>
+                        </div>
+                        <div class="arch-section">
+                            <h3>.bss Section</h3>
+                            <div class="arch-item">Variables & Buffers</div>
+                        </div>
+                        <div class="arch-section">
+                            <h3>.text Section</h3>
+                            <div class="arch-item">Main Logic & Functions</div>
+                        </div>
+                    </div>
+                    
+                    <h3>Program Flow</h3>
+                    <div class="flow-steps">
+                        <div class="flow-step">1. Initialize & Get Input</div>
+                        <div class="flow-step">2. Display Menu</div>
+                        <div class="flow-step">3. Process Choice</div>
+                        <div class="flow-step">4. Perform Operation</div>
+                        <div class="flow-step">5. Display Result</div>
+                        <div class="flow-step">6. Repeat</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Macros Definition -->
+        <div class="slide" data-slide="4">
+            <div class="slide-content">
+                <h2 class="slide-title">Macros Definition</h2>
+                <div class="content">
+                    <div class="macro-section">
+                        <h3>WRITE Macro</h3>
+                        <div class="code-block">
+<pre><code>%macro WRITE 2
+    mov eax, 4          ; sys_write
+    mov ebx, 1          ; fd = stdout
+    mov ecx, %1         ; buffer
+    mov edx, %2         ; length
+    int 0x80
+%endmacro</code></pre>
+                        </div>
+                        <p><strong>Purpose:</strong> Output text to stdout using Linux sys_write (syscall #4)</p>
+                    </div>
+
+                    <div class="macro-section">
+                        <h3>READ Macro</h3>
+                        <div class="code-block">
+<pre><code>%macro READ 2
+    mov eax, 3          ; sys_read
+    mov ebx, 0          ; fd = stdin
+    mov ecx, %1         ; buffer
+    mov edx, %2         ; length
+    int 0x80
+%endmacro</code></pre>
+                        </div>
+                        <p><strong>Purpose:</strong> Read input from stdin using Linux sys_read (syscall #3)</p>
+                    </div>
+
+                    <div class="macro-section">
+                        <h3>EXIT Macro</h3>
+                        <div class="code-block">
+<pre><code>%macro EXIT 0
+    mov eax, 1
+    xor ebx, ebx
+    int 0x80
+%endmacro</code></pre>
+                        </div>
+                        <p><strong>Purpose:</strong> Terminate program using sys_exit (syscall #1)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: .data Section -->
+        <div class="slide" data-slide="5">
+            <div class="slide-content">
+                <h2 class="slide-title">.data Section - String Literals</h2>
+                <div class="content">
+                    <div class="data-category">
+                        <h3>Menu & Prompts</h3>
+                        <div class="code-block">
+<pre><code>menu db "1. Addition",10
+     db "2. Subtraction",10
+     db "3. Multiply",10
+     db "4. Division",10
+     db "5. Exit",10
+     db "Enter choice: ",0
+menulen equ $ - menu
+
+prompt      db "Enter two hex numbers...",10,0
+firstmsg    db "First: ",0
+secondmsg   db "Second: ",0</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="data-category">
+                        <h3>Operation Result Messages</h3>
+                        <div class="code-block">
+<pre><code>msg_add db "Addition is:",10,0
+msg_sub db "Subtraction is:",10,0
+msg_mul db "Multiplication is:",10,0
+msg_divq db "Division (quotient) is:",10,0
+msg_divr db "Remainder is:",10,0</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="data-category">
+                        <h3>Status Messages</h3>
+                        <div class="code-block">
+<pre><code>msg_exit db "Exit",10,0
+msg_wrong db "Wrong choice",10,0
+nl db 10    ; newline character</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: .bss Section -->
+        <div class="slide" data-slide="6">
+            <div class="slide-content">
+                <h2 class="slide-title">.bss Section - Uninitialized Variables</h2>
+                <div class="content">
+                    <div class="bss-grid">
+                        <div class="bss-item">
+                            <h3>Operands & Results</h3>
+                            <div class="code-block">
+<pre><code>a       resd 1    ; 32-bit first operand
+b       resd 1    ; 32-bit second operand
+c       resd 1    ; result / quotient
+d       resd 1    ; remainder</code></pre>
+                            </div>
+                            <p><strong>Size:</strong> 4 bytes each (32-bit integers)</p>
+                            <p><strong>Purpose:</strong> Store arithmetic operands and results</p>
+                        </div>
+
+                        <div class="bss-item">
+                            <h3>Input/Output Buffers</h3>
+                            <div class="code-block">
+<pre><code>choice  resb 3    ; user menu choice
+buf     resb 16   ; input/output scratch</code></pre>
+                            </div>
+                            <p><strong>choice:</strong> 3 bytes (char + '\n' + null)</p>
+                            <p><strong>buf:</strong> 16 bytes for hex string conversion</p>
+                        </div>
+                    </div>
+
+                    <div class="memory-layout">
+                        <h3>Memory Layout</h3>
+                        <div class="memory-diagram">
+                            <div class="mem-block">a (4 bytes)</div>
+                            <div class="mem-block">b (4 bytes)</div>
+                            <div class="mem-block">c (4 bytes)</div>
+                            <div class="mem-block">d (4 bytes)</div>
+                            <div class="mem-block">choice (3 bytes)</div>
+                            <div class="mem-block">buf (16 bytes)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: .text Section -->
+        <div class="slide" data-slide="7">
+            <div class="slide-content">
+                <h2 class="slide-title">.text Section - Main Program Structure</h2>
+                <div class="content">
+                    <div class="code-block">
+<pre><code>section .text
+global _start
+
+_start:
+    ; Get first hex number
+    WRITE prompt, prompt_len
+    WRITE firstmsg, firstmsg_len
+    READ buf, 16
+    call accept
+    mov [a], ebx
+    
+    ; Get second hex number
+    WRITE secondmsg, secondmsg_len
+    READ buf, 16
+    call accept
+    mov [b], ebx
+    
+    ; Enter menu loop
+    jmp printmenu</code></pre>
+                    </div>
+
+                    <h3>Key Components</h3>
+                    <ul>
+                        <li><strong>_start:</strong> Program entry point (required by linker)</li>
+                        <li><strong>Input Phase:</strong> Get two hexadecimal numbers from user</li>
+                        <li><strong>accept:</strong> Function to parse hex strings into integers</li>
+                        <li><strong>Storage:</strong> Save parsed values in variables a and b</li>
+                        <li><strong>Menu Loop:</strong> Enter interactive menu system</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Main Program Flow -->
+        <div class="slide" data-slide="8">
+            <div class="slide-content">
+                <h2 class="slide-title">Main Program Flow - _start Routine</h2>
+                <div class="content">
+                    <div class="flow-diagram">
+                        <div class="flow-box">Program Start</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-box">Display Input Prompt</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-box">Read First Hex Number</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-box">Parse with accept()</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-box">Store in variable 'a'</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-box">Read Second Hex Number</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-box">Parse with accept()</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-box">Store in variable 'b'</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-box">Enter Menu Loop</div>
+                    </div>
+
+                    <h3>Input Handling</h3>
+                    <ul>
+                        <li>Program accepts up to 8 hexadecimal digits per number</li>
+                        <li>Both uppercase (A-F) and lowercase (a-f) hex digits supported</li>
+                        <li>Input is parsed character by character</li>
+                        <li>Result stored as 32-bit integers in memory</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Menu System -->
+        <div class="slide" data-slide="9">
+            <div class="slide-content">
+                <h2 class="slide-title">Menu System & Choice Handling</h2>
+                <div class="content">
+                    <div class="code-block">
+<pre><code>printmenu:
+    WRITE menu, menulen
+    READ choice, 3
+    mov al, [choice]
+    cmp al, '1'
+    je addition
+    cmp al, '2'
+    je subtraction
+    cmp al, '3'
+    je multiply
+    cmp al, '4'
+    je division
+    cmp al, '5'
+    je do_exit
+    WRITE msg_wrong, len_wrong
+    jmp printmenu</code></pre>
+                    </div>
+
+                    <div class="menu-flow">
+                        <h3>Menu Logic Flow</h3>
+                        <div class="menu-options">
+                            <div class="menu-option">
+                                <div class="option-num">1</div>
+                                <div class="option-desc">Addition → jump to addition</div>
+                            </div>
+                            <div class="menu-option">
+                                <div class="option-num">2</div>
+                                <div class="option-desc">Subtraction → jump to subtraction</div>
+                            </div>
+                            <div class="menu-option">
+                                <div class="option-num">3</div>
+                                <div class="option-desc">Multiply → jump to multiply</div>
+                            </div>
+                            <div class="menu-option">
+                                <div class="option-num">4</div>
+                                <div class="option-desc">Division → jump to division</div>
+                            </div>
+                            <div class="menu-option">
+                                <div class="option-num">5</div>
+                                <div class="option-desc">Exit → jump to do_exit</div>
+                            </div>
+                            <div class="menu-option error">
+                                <div class="option-num">?</div>
+                                <div class="option-desc">Invalid → show error, repeat menu</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Arithmetic Operations -->
+        <div class="slide" data-slide="10">
+            <div class="slide-content">
+                <h2 class="slide-title">Arithmetic Operations</h2>
+                <div class="content">
+                    <div class="operation-grid">
+                        <div class="operation">
+                            <h3>Addition</h3>
+                            <div class="code-block">
+<pre><code>addition:
+    mov eax, [a]
+    add eax, [b]
+    mov [c], eax
+    ; Display result
+    mov ebx, [c]
+    call display_hex8</code></pre>
+                            </div>
+                            <p>Simple 32-bit integer addition</p>
+                        </div>
+
+                        <div class="operation">
+                            <h3>Subtraction</h3>
+                            <div class="code-block">
+<pre><code>subtraction:
+    mov eax, [a]
+    sub eax, [b]
+    mov [c], eax
+    ; Display result
+    mov ebx, [c]
+    call display_hex8</code></pre>
+                            </div>
+                            <p>Subtract second operand from first</p>
+                        </div>
+
+                        <div class="operation">
+                            <h3>Multiplication</h3>
+                            <div class="code-block">
+<pre><code>multiply:
+    mov eax, [a]
+    mul dword [b]
+    mov [c], eax
+    ; Display result
+    mov ebx, [c]
+    call display_hex8</code></pre>
+                            </div>
+                            <p>Unsigned multiplication (EDX:EAX result)</p>
+                        </div>
+
+                        <div class="operation">
+                            <h3>Division</h3>
+                            <div class="code-block">
+<pre><code>division:
+    xor edx, edx
+    mov eax, [a]
+    div dword [b]
+    mov [c], eax  ; quotient
+    mov [d], edx  ; remainder</code></pre>
+                            </div>
+                            <p>Unsigned division with remainder</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: accept Function -->
+        <div class="slide" data-slide="11">
+            <div class="slide-content">
+                <h2 class="slide-title">accept Function - Hex String Parsing</h2>
+                <div class="content">
+                    <div class="code-block">
+<pre><code>accept:
+    xor ebx, ebx        ; clear result
+    mov esi, buf        ; source pointer
+.loop:
+    mov al, [esi]       ; get character
+    cmp al, 10          ; newline?
+    je .done
+    cmp al, 0           ; null terminator?
+    je .done
+    ; Check if digit 0-9
+    cmp al, '0'
+    jb .done
+    cmp al, '9'
+    jbe .digit
+    ; Check if uppercase A-F
+    cmp al, 'A'
+    jb .chk_low
+    cmp al, 'F'
+    jbe .up
+.chk_low:
+    ; Check if lowercase a-f
+    cmp al, 'a'
+    jb .done
+    cmp al, 'f'
+    ja .done
+    sub al, 'a'-10      ; convert to number
+    jmp .got
+.up:
+    sub al, 'A'-10      ; convert to number
+    jmp .got
+.digit:
+    sub al, '0'         ; convert to number
+.got:
+    shl ebx, 4          ; shift left 4 bits
+    add ebx, eax        ; add new nibble
+    inc esi             ; next character
+    jmp .loop
+.done:
+    ret                 ; result in EBX</code></pre>
+                    </div>
+
+                    <div class="parsing-steps">
+                        <h3>Parsing Algorithm</h3>
+                        <ol>
+                            <li>Initialize result (EBX) to zero</li>
+                            <li>Read each character from input buffer</li>
+                            <li>Check if valid hex digit (0-9, A-F, a-f)</li>
+                            <li>Convert character to numeric value (0-15)</li>
+                            <li>Shift previous result left by 4 bits</li>
+                            <li>Add new nibble to result</li>
+                            <li>Repeat until end of string</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: display_hex8 Function -->
+        <div class="slide" data-slide="12">
+            <div class="slide-content">
+                <h2 class="slide-title">display_hex8 Function - Hex Output</h2>
+                <div class="content">
+                    <div class="code-block">
+<pre><code>display_hex8:
+    mov esi, buf        ; output buffer
+    mov ecx, 8          ; 8 hex digits
+.next:
+    rol ebx, 4          ; rotate left 4 bits
+    mov al, bl          ; get low byte
+    and al, 0x0F        ; mask to get nibble
+    cmp al, 9           ; check if > 9
+    jbe .num
+    add al, 7           ; adjust for A-F
+.num:
+    add al, '0'         ; convert to ASCII
+    mov [esi], al       ; store character
+    inc esi             ; next position
+    loop .next          ; repeat 8 times
+    WRITE buf, 8        ; output 8 characters
+    ret</code></pre>
+                    </div>
+
+                    <div class="output-process">
+                        <h3>Output Process</h3>
+                        <div class="process-steps">
+                            <div class="process-step">
+                                <h4>1. Extract Nibble</h4>
+                                <p>Rotate EBX left 4 bits, mask to get 4-bit value</p>
+                            </div>
+                            <div class="process-step">
+                                <h4>2. Convert to ASCII</h4>
+                                <p>0-9 → '0'-'9', 10-15 → 'A'-'F'</p>
+                            </div>
+                            <div class="process-step">
+                                <h4>3. Store Character</h4>
+                                <p>Place ASCII character in output buffer</p>
+                            </div>
+                            <div class="process-step">
+                                <h4>4. Repeat</h4>
+                                <p>Process all 8 nibbles (32 bits)</p>
+                            </div>
+                        </div>
+                        
+                        <h3>Example: 0x1A2B3C4D → "1A2B3C4D"</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 13: System Calls -->
+        <div class="slide" data-slide="13">
+            <div class="slide-content">
+                <h2 class="slide-title">Linux System Calls Interface</h2>
+                <div class="content">
+                    <div class="syscall-table">
+                        <h3>System Call Numbers & Registers</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Syscall</th>
+                                    <th>Number</th>
+                                    <th>EAX</th>
+                                    <th>EBX</th>
+                                    <th>ECX</th>
+                                    <th>EDX</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>sys_exit</td>
+                                    <td>1</td>
+                                    <td>1</td>
+                                    <td>exit_code</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td>sys_read</td>
+                                    <td>3</td>
+                                    <td>3</td>
+                                    <td>fd (0=stdin)</td>
+                                    <td>buffer</td>
+                                    <td>count</td>
+                                </tr>
+                                <tr>
+                                    <td>sys_write</td>
+                                    <td>4</td>
+                                    <td>4</td>
+                                    <td>fd (1=stdout)</td>
+                                    <td>buffer</td>
+                                    <td>count</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="syscall-mechanism">
+                        <h3>System Call Mechanism</h3>
+                        <div class="mechanism-steps">
+                            <div class="mech-step">
+                                <h4>1. Setup Registers</h4>
+                                <p>Load syscall number in EAX, parameters in EBX, ECX, EDX</p>
+                            </div>
+                            <div class="mech-step">
+                                <h4>2. Software Interrupt</h4>
+                                <p>Execute <code>int 0x80</code> to switch to kernel mode</p>
+                            </div>
+                            <div class="mech-step">
+                                <h4>3. Kernel Processing</h4>
+                                <p>Linux kernel handles the system call request</p>
+                            </div>
+                            <div class="mech-step">
+                                <h4>4. Return to User</h4>
+                                <p>Control returns to user program with result in EAX</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Build & Run Instructions -->
+        <div class="slide" data-slide="14">
+            <div class="slide-content">
+                <h2 class="slide-title">Build & Run Instructions</h2>
+                <div class="content">
+                    <div class="build-steps">
+                        <h3>Assembly & Linking Commands</h3>
+                        
+                        <div class="build-step">
+                            <h4>Step 1: Assemble</h4>
+                            <div class="code-block">
+<pre><code>nasm -f elf32 hex_calc32.asm -o hex_calc32.o</code></pre>
+                            </div>
+                            <ul>
+                                <li><strong>-f elf32:</strong> Generate 32-bit ELF object file</li>
+                                <li><strong>Input:</strong> hex_calc32.asm (source code)</li>
+                                <li><strong>Output:</strong> hex_calc32.o (object file)</li>
+                            </ul>
+                        </div>
+
+                        <div class="build-step">
+                            <h4>Step 2: Link</h4>
+                            <div class="code-block">
+<pre><code>ld -m elf_i386 hex_calc32.o -o hex_calc32</code></pre>
+                            </div>
+                            <ul>
+                                <li><strong>-m elf_i386:</strong> Target 32-bit x86 architecture</li>
+                                <li><strong>Input:</strong> hex_calc32.o (object file)</li>
+                                <li><strong>Output:</strong> hex_calc32 (executable)</li>
+                            </ul>
+                        </div>
+
+                        <div class="build-step">
+                            <h4>Step 3: Execute</h4>
+                            <div class="code-block">
+<pre><code>./hex_calc32</code></pre>
+                            </div>
+                            <p>Run the executable program</p>
+                        </div>
+                    </div>
+
+                    <div class="requirements">
+                        <h3>System Requirements</h3>
+                        <ul>
+                            <li>Linux operating system (32-bit or 64-bit with 32-bit support)</li>
+                            <li>NASM assembler (apt install nasm)</li>
+                            <li>GNU ld linker (part of binutils)</li>
+                            <li>32-bit libraries if running on 64-bit system</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 15: Summary & Key Takeaways -->
+        <div class="slide" data-slide="15">
+            <div class="slide-content">
+                <h2 class="slide-title">Summary & Key Takeaways</h2>
+                <div class="content">
+                    <div class="summary-grid">
+                        <div class="summary-section">
+                            <h3>🔧 Technical Concepts</h3>
+                            <ul>
+                                <li>32-bit x86 assembly programming</li>
+                                <li>Linux system call interface</li>
+                                <li>Hexadecimal number conversion</li>
+                                <li>Memory management (.data, .bss, .text)</li>
+                                <li>Function calling conventions</li>
+                            </ul>
+                        </div>
+
+                        <div class="summary-section">
+                            <h3>💡 Programming Techniques</h3>
+                            <ul>
+                                <li>Macro definitions for code reuse</li>
+                                <li>Character-by-character string parsing</li>
+                                <li>Bit manipulation for number conversion</li>
+                                <li>Menu-driven program structure</li>
+                                <li>Error handling and validation</li>
+                            </ul>
+                        </div>
+
+                        <div class="summary-section">
+                            <h3>🎯 Key Instructions Used</h3>
+                            <ul>
+                                <li><strong>mov:</strong> Data movement</li>
+                                <li><strong>add/sub:</strong> Arithmetic operations</li>
+                                <li><strong>mul/div:</strong> Multiplication/division</li>
+                                <li><strong>cmp/je/jmp:</strong> Control flow</li>
+                                <li><strong>shl/rol:</strong> Bit shifting</li>
+                                <li><strong>int 0x80:</strong> System calls</li>
+                            </ul>
+                        </div>
+
+                        <div class="summary-section">
+                            <h3>🎓 Learning Outcomes</h3>
+                            <ul>
+                                <li>Understanding low-level programming</li>
+                                <li>Working with system calls</li>
+                                <li>Number base conversions</li>
+                                <li>Assembly language structure</li>
+                                <li>Debugging assembly code</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="conclusion">
+                        <h3>Conclusion</h3>
+                        <p>This program demonstrates fundamental assembly language concepts including system programming, 
+                        number conversion algorithms, and structured program design. It serves as an excellent 
+                        introduction to x86 assembly programming on Linux systems.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation">
+            <button class="nav-btn" id="prevBtn">← Previous</button>
+            <div class="slide-counter">
+                <span id="currentSlide">1</span> / <span id="totalSlides">15</span>
+            </div>
+            <button class="nav-btn" id="nextBtn">Next →</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
